@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QED Asset Registry — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div id="loginPage">
+  <div class="login-lang">
+    <select><option>English (United States)</option><option>English (UK)</option></select>
+  </div>
+
+  <div class="logo login-logo">
+    <img src="QED LOGO NEW.png" alt="QED-logo" height="60px" width="60px">
+    <h1>QEDi <span>International Oil & Gas</span></h1>
+    <p>Asset Registry System</p>
+  </div>
+
+  <div class="login-box">
+    <h2>Sign in to your account</h2>
+    <div class="login-field">
+      <i class="fas fa-envelope"></i>
+      <input type="email" id="loginEmail" placeholder="Email address" />
+    </div>
+    <div class="login-field">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div class="login-error" id="loginError"><i class="fas fa-circle-exclamation"></i> Invalid email or password.</div>
+    <button class="btn-login" onclick="doLogin()">Log In as Admin</button>
+    <div class="login-forgot"><a href="#">Forgot password?</a></div>
+    <div class="login-divider"><span>or</span></div>
+    <button class="btn-guest" onclick="doGuest()"><i class="fas fa-eye"></i> &nbsp; View Registry as Guest</button>
+    <div class="login-hint"><strong></strong><br>Guest access has read-only permissions.</div>
+  </div>
+</div>
+<div class="watermark"><p>Developed by Skageus</p></div>
+<script src="app.js"></script>
+<script>
+(function () {
+  const savedRole = localStorage.getItem('qed_role');
+
+  // IMPORTANT: prevent running on login page
+  if (window.location.pathname.includes('qed-login-page.html')) return;
+
+  if (!savedRole) {
+    window.location.href = 'qed-login-page.html';
+    return;
+  }
+
+  if (savedRole === 'admin') {
+    window.location.href = 'admin-access.html';
+  } else if (savedRole === 'guest') {
+    window.location.href = 'guest.html';
+  }
+})();
+</script>
+</body>
+</html>

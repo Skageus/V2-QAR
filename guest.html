@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QED Asset Registry — Guest View</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="header-logo" onclick="goHome()">
+      <div class="lm">QED</div>
+      <h1>Asset <span>Registry</span></h1>
+    </div>
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" onclick="switchView('cards')" id="tabCards">Cards</button>
+      <button class="nav-tab" onclick="switchView('table')" id="tabTable">Registry</button>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="role-badge guest" id="roleBadge">👁 Guest</span>
+    <button class="btn-add" id="addBtn" style="display:none" onclick="toggleForm()">+ Add Asset</button>
+    <button class="btn-logout" onclick="doLogout()"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
+  </div>
+</header>
+
+<!-- GUEST BANNER -->
+<div id="guestBanner" class="guest-banner">
+  <i class="fas fa-eye"></i>
+  <span><strong>Guest view:</strong> You can browse and view all assets. Log in as Admin to add, edit, or delete assets.</span>
+</div>
+
+<!-- CARDS VIEW -->
+<div id="cardsView">
+  <div class="app-main">
+    <div id="assetList"></div>
+  </div>
+</div>
+
+<!-- TABLE VIEW -->
+<div id="tableView" style="display:none">
+  <div class="app-main">
+    <div class="table-toolbar">
+      <input type="text" class="table-search" id="tableSearch" placeholder="Search assets…" oninput="renderTable()" />
+      <select class="table-filter" id="catFilter" onchange="renderTable()">
+        <option value="">All Categories</option>
+      </select>
+      <span class="table-count" id="tableCount"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('code')"         id="th-code">Code         <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('name')"         id="th-name">Asset Name   <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('category')"     id="th-category">Category <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('location')"     id="th-location">Location <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('owner')"        id="th-owner">Owner        <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('department')"   id="th-department">Dept.   <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('serial')"       id="th-serial">Serial      <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('purchaseDate')" id="th-purchaseDate">Purchase Date <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th id="th-maintenance">Maintenance</th>
+            <th id="th-qr">QR Code</th>
+            <th onclick="sortTable('status')"       id="th-status">Status      <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th id="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="detailView" style="display:none">
+  <div class="detail-wrap">
+    <button class="detail-back" onclick="closeDetail()"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="detail-layout">
+      <div>
+        <div class="detail-image-wrap" id="detailImgWrap"></div>
+      </div>
+      <div class="detail-info">
+        <div class="detail-header">
+          <div class="detail-code" id="detailCode"></div>
+          <div class="detail-name" id="detailName"></div>
+          <div class="detail-desc" id="detailDesc"></div>
+        </div>
+        <div>
+          <div class="detail-sec-title">Ownership &amp; Details</div>
+          <div id="detailOwnerRows"></div>
+        </div>
+        <div>
+          <div class="detail-sec-title">Specifications</div>
+          <div class="detail-specs-box" id="detailSpecs"></div>
+        </div>
+        <div class="detail-actions" id="detailActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAINTENANCE LOG VIEW (read-only for guests) -->
+<div id="maintView" style="display:none">
+  <div class="maint-wrap">
+    <button class="detail-back" onclick="closeMaintView()"><i class="fas fa-arrow-left"></i> Back to Asset</button>
+
+    <div class="maint-header">
+      <div class="maint-header-top">
+        <div>
+          <div style="margin-bottom:6px"><span class="maint-asset-code" id="maintAssetCode"></span></div>
+          <div class="maint-asset-name" id="maintAssetName"></div>
+          <div class="maint-subtitle"><i class="fas fa-wrench" style="color:var(--sky2)"></i> Maintenance Log <span style="font-size:0.78rem;color:var(--muted);margin-left:8px"><i class="fas fa-eye"></i> Read-only</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="maint-summary">
+      <div class="maint-stat">
+        <div class="maint-stat-value" id="maintSummaryTotal">0</div>
+        <div class="maint-stat-label">Total Entries</div>
+      </div>
+      <div class="maint-stat success">
+        <div class="maint-stat-value" id="maintSummaryDone">0</div>
+        <div class="maint-stat-label">Completed</div>
+      </div>
+      <div class="maint-stat warn">
+        <div class="maint-stat-value" id="maintSummaryUpcoming">0</div>
+        <div class="maint-stat-label">Upcoming</div>
+      </div>
+      <div class="maint-stat danger">
+        <div class="maint-stat-value" id="maintSummaryOverdue">0</div>
+        <div class="maint-stat-label">Overdue</div>
+      </div>
+    </div>
+
+    <!-- No form for guests -->
+    <div id="maintFormSection" style="display:none"></div>
+
+    <!-- Previous / Completed Maintenance -->
+    <div class="maint-section">
+      <div class="maint-section-header">
+        <div class="maint-section-title"><i class="fas fa-history" style="color:var(--green)"></i> Completed Maintenance</div>
+      </div>
+      <div class="maint-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Title / Description</th>
+              <th>Type</th>
+              <th>Technician</th>
+              <th>Cost</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="maintPrevBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upcoming / Scheduled Maintenance -->
+    <div class="maint-section">
+      <div class="maint-section-header">
+        <div class="maint-section-title"><i class="fas fa-calendar-check" style="color:#a16207"></i> Scheduled / Upcoming Maintenance</div>
+      </div>
+      <div class="maint-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scheduled Date</th>
+              <th>Title / Description</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Est. Cost</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="maintNextBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  /* Guard: guests must have explicitly chosen guest access */
+  (function () {
+    const savedRole = localStorage.getItem('qed_role');
+    if (!savedRole) { window.location.href = 'qed-login-page.html'; }
+    if (savedRole === 'admin') { window.location.href = 'admin-access.html'; }
+  })();
+
+  role = 'guest';
+  applyRole();
+  render();
+  updateCatFilter();
+  handleQRDeepLink();
+</script>
+</body>
+</html>
