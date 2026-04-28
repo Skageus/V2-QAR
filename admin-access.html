@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QED Asset Registry — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="header-logo" onclick="goHome()">
+      <div class="lm">QED</div>
+      <h1>Asset <span>Registry</span></h1>
+    </div>
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" onclick="switchView('cards')" id="tabCards">Cards</button>
+      <button class="nav-tab" onclick="switchView('table')" id="tabTable">Registry</button>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="role-badge admin" id="roleBadge">🔑 Admin</span>
+    <button class="btn-add" id="addBtn" onclick="toggleForm()">+ Add Asset</button>
+    <button class="btn-logout" onclick="doLogout()"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
+  </div>
+</header>
+
+<!-- CARDS VIEW -->
+<div id="cardsView">
+  <div class="app-main">
+    <div class="form-panel" id="formPanel" style="display:none">
+      <h2 id="formTitle">New Asset</h2>
+      <div class="form-grid">
+        <input type="text"  id="f-name"         placeholder="Asset Name *" />
+        <input type="text"  id="f-category"     placeholder="Category" oninput="refreshCode()" />
+        <input type="text"  id="f-location"     placeholder="Location (e.g. PH or LAG)" oninput="refreshCode()" />
+        <input type="text"  id="f-image"        placeholder="Image URL" />
+        <input type="text"  id="f-description"  placeholder="Short Description" />
+        <input type="text"  id="f-specs"        placeholder="Specs" />
+        <input type="text"  id="f-owner"        placeholder="Owner / Custodian" />
+        <input type="text"  id="f-department"   placeholder="Department" />
+        <input type="text"  id="f-serial"       placeholder="Serial / Model No." />
+        <input type="date"  id="f-purchaseDate" placeholder="Purchase Date" title="Purchase Date" />
+        <input type="text"  id="f-code"         placeholder="Asset Code (auto-generated)" readonly />
+      </div>
+      <div class="form-actions">
+        <button class="btn-submit" id="submitBtn" onclick="submitAsset()">Add Asset</button>
+        <button class="btn-cancel" onclick="cancelForm()">Cancel</button>
+      </div>
+    </div>
+    <div id="assetList"></div>
+  </div>
+</div>
+
+<!-- TABLE VIEW -->
+<div id="tableView" style="display:none">
+  <div class="app-main">
+    <div class="form-panel" id="formPanelT" style="display:none">
+      <h2 id="formTitleT">New Asset</h2>
+      <div class="form-grid">
+        <input type="text"  id="ft-name"         placeholder="Asset Name *" />
+        <input type="text"  id="ft-category"     placeholder="Category" oninput="refreshCodeT()" />
+        <input type="text"  id="ft-location"     placeholder="Location (e.g. PH or LAG)" oninput="refreshCodeT()" />
+        <input type="text"  id="ft-image"        placeholder="Image URL" />
+        <input type="text"  id="ft-description"  placeholder="Short Description" />
+        <input type="text"  id="ft-specs"        placeholder="Specs" />
+        <input type="text"  id="ft-owner"        placeholder="Owner / Custodian" />
+        <input type="text"  id="ft-department"   placeholder="Department" />
+        <input type="text"  id="ft-serial"       placeholder="Serial / Model No." />
+        <input type="date"  id="ft-purchaseDate" placeholder="Purchase Date" title="Purchase Date" />
+        <input type="text"  id="ft-code"         placeholder="Asset Code (auto-generated)" readonly />
+      </div>
+      <div class="form-actions">
+        <button class="btn-submit" id="submitBtnT" onclick="submitAssetT()">Add Asset</button>
+        <button class="btn-cancel" onclick="cancelFormT()">Cancel</button>
+      </div>
+    </div>
+    <div class="table-toolbar">
+      <input type="text" class="table-search" id="tableSearch" placeholder="Search assets…" oninput="renderTable()" />
+      <select class="table-filter" id="catFilter" onchange="renderTable()">
+        <option value="">All Categories</option>
+      </select>
+      <span class="table-count" id="tableCount"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('code')"         id="th-code">Code         <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('name')"         id="th-name">Asset Name   <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('category')"     id="th-category">Category <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('location')"     id="th-location">Location <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('owner')"        id="th-owner">Owner        <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('department')"   id="th-department">Dept.   <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('serial')"       id="th-serial">Serial      <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th onclick="sortTable('purchaseDate')" id="th-purchaseDate">Purchase Date <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th id="th-maintenance">Maintenance</th>
+            <th id="th-qr">QR Code</th>
+            <th onclick="sortTable('status')"       id="th-status">Status      <i class="fas fa-sort" style="font-size:0.6rem;opacity:0.4"></i></th>
+            <th id="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="detailView" style="display:none">
+  <div class="detail-wrap">
+    <button class="detail-back" onclick="closeDetail()"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="detail-layout">
+      <div>
+        <div class="detail-image-wrap" id="detailImgWrap"></div>
+      </div>
+      <div class="detail-info">
+        <div class="detail-header">
+          <div class="detail-code" id="detailCode"></div>
+          <div class="detail-name" id="detailName"></div>
+          <div class="detail-desc" id="detailDesc"></div>
+        </div>
+        <div>
+          <div class="detail-sec-title">Ownership &amp; Details</div>
+          <div id="detailOwnerRows"></div>
+        </div>
+        <div>
+          <div class="detail-sec-title">Specifications</div>
+          <div class="detail-specs-box" id="detailSpecs"></div>
+        </div>
+        <div class="detail-actions" id="detailActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAINTENANCE LOG VIEW -->
+<div id="maintView" style="display:none">
+  <div class="maint-wrap">
+    <button class="detail-back" onclick="closeMaintView()"><i class="fas fa-arrow-left"></i> Back to Asset</button>
+
+    <div class="maint-header">
+      <div class="maint-header-top">
+        <div>
+          <div style="margin-bottom:6px"><span class="maint-asset-code" id="maintAssetCode"></span></div>
+          <div class="maint-asset-name" id="maintAssetName"></div>
+          <div class="maint-subtitle"><i class="fas fa-wrench" style="color:var(--sky2)"></i> Maintenance Log</div>
+        </div>
+        <div class="maint-header-actions">
+          <button class="btn-maint-add completed-add" onclick="showMaintForm('completed')"><i class="fas fa-plus"></i> Log Completed</button>
+          <button class="btn-maint-add scheduled-add" onclick="showMaintForm('scheduled')"><i class="fas fa-calendar-plus"></i> Schedule Maintenance</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="maint-summary">
+      <div class="maint-stat">
+        <div class="maint-stat-value" id="maintSummaryTotal">0</div>
+        <div class="maint-stat-label">Total Entries</div>
+      </div>
+      <div class="maint-stat success">
+        <div class="maint-stat-value" id="maintSummaryDone">0</div>
+        <div class="maint-stat-label">Completed</div>
+      </div>
+      <div class="maint-stat warn">
+        <div class="maint-stat-value" id="maintSummaryUpcoming">0</div>
+        <div class="maint-stat-label">Upcoming</div>
+      </div>
+      <div class="maint-stat danger">
+        <div class="maint-stat-value" id="maintSummaryOverdue">0</div>
+        <div class="maint-stat-label">Overdue</div>
+      </div>
+    </div>
+
+    <!-- Add / Edit Form -->
+    <div class="maint-form-panel" id="maintFormSection" style="display:none">
+      <h3 id="maintFormTitle">Add Maintenance Entry</h3>
+      <div class="maint-form-grid">
+        <input type="text" id="mf-title"      placeholder="Title / Description *" />
+        <input type="date" id="mf-date"       placeholder="Date *" />
+        <select id="mf-type">
+          <option value="completed">Completed</option>
+          <option value="scheduled">Scheduled</option>
+        </select>
+        <input type="text" id="mf-technician" placeholder="Technician / Vendor" />
+        <input type="number" id="mf-cost"     placeholder="Cost (₦)" min="0" />
+        <textarea id="mf-notes" placeholder="Notes / Findings (optional)"></textarea>
+      </div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn-submit" id="maintSubmitBtn" onclick="submitMaintLog()">Save Entry</button>
+        <button class="btn-cancel" onclick="hideMaintForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Previous / Completed Maintenance -->
+    <div class="maint-section">
+      <div class="maint-section-header">
+        <div class="maint-section-title"><i class="fas fa-history" style="color:var(--green)"></i> Completed Maintenance</div>
+      </div>
+      <div class="maint-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Title / Description</th>
+              <th>Type</th>
+              <th>Technician</th>
+              <th>Cost</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="maintPrevBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upcoming / Scheduled Maintenance -->
+    <div class="maint-section">
+      <div class="maint-section-header">
+        <div class="maint-section-title"><i class="fas fa-calendar-check" style="color:#a16207"></i> Scheduled / Upcoming Maintenance</div>
+      </div>
+      <div class="maint-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Scheduled Date</th>
+              <th>Title / Description</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Est. Cost</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="maintNextBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="watermark"><p>Developed by Skageus</p></div>
+<script src="app.js"></script>
+<script>
+  /* Guard: only admins allowed here */
+  (function () {
+    if (localStorage.getItem('qed_role') !== 'admin') {
+      window.location.href = 'index.html';
+    } else {
+      localStorage.removeItem('qed_role');
+    }
+  })();
+
+  role = 'admin';
+  applyRole();
+  render();
+  updateCatFilter();
+</script>
+</body>
+</html>
