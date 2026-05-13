@@ -410,20 +410,40 @@ function cancelFormT() {
 function toggleMobileMenu() {
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
-  if (!hamburger || !mobileMenu) return;
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  if (!hamburger || !mobileMenu || !mobileOverlay) return;
   
-  hamburger.classList.toggle('active');
-  mobileMenu.classList.toggle('active');
+  const isActive = mobileMenu.classList.contains('active');
+  
+  if (!isActive) {
+    // Opening menu
+    hamburger.classList.add('active');
+    mobileMenu.classList.add('active');
+    mobileOverlay.classList.add('active');
+    document.body.classList.add('menu-open');
+  } else {
+    // Closing menu
+    closeMobileMenu();
+  }
 }
 
 function closeMobileMenu() {
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
-  if (!hamburger || !mobileMenu) return;
+  const mobileOverlay = document.getElementById('mobileOverlay');
   
-  hamburger.classList.remove('active');
-  mobileMenu.classList.remove('active');
+  if (hamburger) hamburger.classList.remove('active');
+  if (mobileMenu) mobileMenu.classList.remove('active');
+  if (mobileOverlay) mobileOverlay.classList.remove('active');
+  document.body.classList.remove('menu-open');
 }
+
+// Close menu on Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' || event.keyCode === 27) {
+    closeMobileMenu();
+  }
+});
 
 function refreshCode() {
   if (editId) return;
