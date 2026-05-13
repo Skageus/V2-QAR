@@ -28,7 +28,27 @@
     <button class="btn-add" id="addBtn" onclick="toggleForm()">+ Add Asset</button>
     <button class="btn-logout" onclick="doLogout()"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
   </div>
+  <!-- Hamburger Button -->
+  <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
 </header>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-content">
+    <div class="mobile-menu-section">
+      <button class="mobile-nav-tab active" onclick="switchView('cards'); closeMobileMenu()" id="mobileTabCards">Cards</button>
+      <button class="mobile-nav-tab" onclick="switchView('table'); closeMobileMenu()" id="mobileTabTable">Registry</button>
+    </div>
+    <div class="mobile-menu-section">
+      <button class="mobile-menu-item" id="mobileAddBtn" onclick="toggleForm(); closeMobileMenu()">+ Add Asset</button>
+      <button class="mobile-menu-item logout" onclick="doLogout()"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
+    </div>
+  </div>
+</div>
 
 <!-- CARDS VIEW -->
 <div id="cardsView">
