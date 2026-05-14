@@ -46,7 +46,7 @@ img {
 
 #loginPage {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #1a3a6b 100%);
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #122e58 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
 }
@@ -64,7 +64,7 @@ img {
   font-family: var(--font-body); cursor: pointer; outline: none;
 }
 .login-logo {
-  display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; z-index: 1; background: transparent;
 }
 .login-logo .logo-mark {
   width: 68px; height: 68px; border-radius: 16px;
