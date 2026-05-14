@@ -46,14 +46,33 @@ img {
 
 #loginPage {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #122e58 100%);
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 22%),
+    radial-gradient(circle at 80% 15%, rgba(14,165,233,0.2), transparent 18%),
+    linear-gradient(135deg, var(--navy) 0%, var(--navy2) 45%, #122e58 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
+  isolation: isolate;
 }
 #loginPage::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 70% 30%, rgba(56,189,248,0.12) 0%, transparent 60%);
+  background:
+    radial-gradient(circle at 55% 25%, rgba(56,189,248,0.18), transparent 18%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0) 52%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+#loginPage::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(90deg, transparent 42%, rgba(56,189,248,0.08) 44%, rgba(56,189,248,0.08) 46%, transparent 48%),
+    linear-gradient(0deg, transparent 42%, rgba(255,255,255,0.06) 44%, rgba(255,255,255,0.06) 46%, transparent 48%);
+  background-size: 120px 120px, 82px 82px;
+  opacity: 0.35;
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 .login-lang {
   position: absolute; top: 20px; right: 24px;
@@ -67,22 +86,24 @@ img {
   display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; z-index: 1; background: transparent;
 }
 .login-logo .logo-mark {
-  width: 68px; height: 68px; border-radius: 16px;
-  background: var(--sky); display: flex; align-items: center; justify-content: center;
+  width: 68px; height: 68px; border-radius: 18px;
+  background: radial-gradient(circle at 30% 30%, #ffffff, var(--sky));
+  display: flex; align-items: center; justify-content: center;
   font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--navy);
-  box-shadow: 0 8px 32px rgba(56,189,248,0.35); margin-bottom: 12px;
+  box-shadow: 0 16px 40px rgba(56,189,248,0.32), inset 0 0 18px rgba(255,255,255,0.15);
+  margin-bottom: 12px;
 }
 .login-logo h1 {
   font-family: var(--font-head); font-size: 1.0rem; font-weight: 800;
   color: var(--white); letter-spacing: -0.02em;
 }
 .login-logo h1 span { color: var(--sky); }
-.login-logo p { font-size: 1.1rem; color: rgba(255,255,255,0.5); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+.login-logo p { font-size: 1.1rem; color: rgba(255,255,255,0.68); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
 .login-box {
-  background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
-  padding: 36px 40px; width: 100%; max-width: 400px; z-index: 1;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(28px);
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 24px;
+  padding: 42px 44px; width: 100%; max-width: 420px; z-index: 1;
+  box-shadow: 0 28px 96px rgba(0,0,0,0.44);
 }
 .login-box h2 { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--white); margin-bottom: 24px; }
 .login-field { margin-bottom: 16px; position: relative; }
