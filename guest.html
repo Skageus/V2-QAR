@@ -217,14 +217,17 @@
 <script type="module" src="firebase-init.js"></script>
 <script src="app.js"></script>
 <script>
-  /* Guard: guests must have explicitly chosen guest access */
+  /* Guard: allow guest view directly from shared links or QR scans */
   (function () {
     const savedRole = localStorage.getItem('qed_role');
-    if (!savedRole) { window.location.href = 'index.html'; return; }
-    if (savedRole === 'admin') { window.location.href = 'admin-access.html'; return; }
+    if (savedRole === 'admin') {
+      window.location.href = 'admin-access.html';
+      return;
+    }
 
+    saveRole('guest');
+    role = 'guest';
     initializeBackend().finally(() => {
-      role = 'guest';
       applyRole();
       render();
       updateCatFilter();

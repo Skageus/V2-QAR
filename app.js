@@ -45,6 +45,10 @@ async function startRealTimeListeners() {
     if (window.location.pathname.includes('admin') || window.location.pathname.includes('guest')) {
       refreshCurrentView();
     }
+    if (!deepLinkHandled) {
+      handleQRDeepLink();
+      deepLinkHandled = true;
+    }
   }, err => {
     console.error('Error listening to assets:', err);
   });
@@ -152,6 +156,7 @@ let sortKey     = 'code';
 let sortDir     = 1;
 let currentView = 'cards';
 let previousView = 'cards';
+let deepLinkHandled = false;
 
 // Initialize: Generate missing QR codes on page load
 async function initializeQRCodes() {
