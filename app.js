@@ -226,6 +226,28 @@ async function doGoogleLogin() {
     });
 }
 
+async function doGoogleLogin() {
+  const err   = document.getElementById('loginError');
+  if (!isFirebaseEnabled()) {
+    err.textContent = 'Firebase Google sign in is not available.';
+    err.classList.add('show');
+    return;
+  }
+
+  await ensureFirebasePersistence();
+  const provider = new window.FIREBASE.authProviders.GoogleAuthProvider();
+  window.FIREBASE.authMethods.signInWithPopup(window.FIREBASE.auth, provider)
+    .then(() => {
+      saveRole('admin');
+      err.classList.remove('show');
+      window.location.href = 'admin-access.html';
+    })
+    .catch((error) => {
+      err.textContent = error.message || 'Google sign-in failed.';
+      err.classList.add('show');
+    });
+}
+
 function doGuest() { saveRole('guest'); window.location.href = 'guest.html'; }
 function doLogout() {
   if (isFirebaseEnabled()) {
