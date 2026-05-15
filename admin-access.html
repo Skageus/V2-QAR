@@ -269,21 +269,24 @@
   </div>
 </div>
 <div class="watermark"><p>Developed by Skageus</p></div>
+<script type="module" src="firebase-init.js"></script>
 <script src="app.js"></script>
 <script>
   /* Guard: only admins allowed here */
   (function () {
     if (localStorage.getItem('qed_role') !== 'admin') {
       window.location.href = 'index.html';
-    } else {
-      localStorage.removeItem('qed_role');
+      return;
     }
-  })();
 
-  role = 'admin';
-  applyRole();
-  render();
-  updateCatFilter();
+    localStorage.removeItem('qed_role');
+    initializeBackend().finally(() => {
+      role = 'admin';
+      applyRole();
+      render();
+      updateCatFilter();
+    });
+  })();
 </script>
 </body>
 </html>

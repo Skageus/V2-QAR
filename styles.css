@@ -105,7 +105,7 @@ img {
   padding: 42px 44px; width: 100%; max-width: 420px; z-index: 1;
   box-shadow: 0 28px 96px rgba(0,0,0,0.44);
 }
-.login-box h2 { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--white); margin-bottom: 24px; }
+.login-box h2 { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--white); margin-bottom: 24px; display: flex; align-items: center; margin-left: 65px}
 .login-field { margin-bottom: 16px; position: relative; }
 .login-field i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.35); font-size: 0.9rem; }
 .login-field input {

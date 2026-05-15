@@ -214,20 +214,23 @@
   </div>
 </div>
 <div class="watermark"><p>Developed by Skageus</p></div>
+<script type="module" src="firebase-init.js"></script>
 <script src="app.js"></script>
 <script>
   /* Guard: guests must have explicitly chosen guest access */
   (function () {
     const savedRole = localStorage.getItem('qed_role');
-    if (!savedRole) { window.location.href = 'index.html'; }
-    if (savedRole === 'admin') { window.location.href = 'admin-access.html'; }
-  })();
+    if (!savedRole) { window.location.href = 'index.html'; return; }
+    if (savedRole === 'admin') { window.location.href = 'admin-access.html'; return; }
 
-  role = 'guest';
-  applyRole();
-  render();
-  updateCatFilter();
-  handleQRDeepLink();
+    initializeBackend().finally(() => {
+      role = 'guest';
+      applyRole();
+      render();
+      updateCatFilter();
+      handleQRDeepLink();
+    });
+  })();
 </script>
 </body>
 </html>

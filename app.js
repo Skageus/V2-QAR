@@ -6,6 +6,95 @@
 const ADMIN_EMAIL = 'operations@qedi-ng.com';
 const ADMIN_PASS  = 'Qedi@1234';
 
+const maintenanceCache = {};
+
+function isFirebaseEnabled() {
+  return !!(window.FIREBASE && window.FIREBASE.db && window.FIREBASE.firestore);
+}
+
+function parseAssetId(value) {
+  const num = Number(value);
+  return Number.isInteger(num) ? num : value;
+}
+
+function firebaseDocId(value) {
+  return String(value);
+}
+
+async function initializeBackend() {
+  if (!isFirebaseEnabled()) return;
+  try {
+    await loadAssetsFromBackend();
+    await loadMaintenanceCacheFromBackend();
+  } catch (err) {
+    console.error('Firebase backend initialization failed:', err);
+  }
+}
+
+async function loadAssetsFromBackend() {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  const snapshot = await firestore.getDocs(firestore.collection(db, 'assets'));
+  assets = snapshot.docs.map(doc => ({ id: parseAssetId(doc.id), ...doc.data() }));
+  localStorage.setItem('qed_assets', JSON.stringify(assets));
+}
+
+async function loadMaintenanceCacheFromBackend() {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  const logQuery = firestore.query(
+    firestore.collection(db, 'maintenanceLogs'),
+    firestore.orderBy('assetId'),
+    firestore.orderBy('date')
+  );
+  const snapshot = await firestore.getDocs(logQuery);
+  Object.keys(maintenanceCache).forEach(key => delete maintenanceCache[key]);
+  snapshot.docs.forEach(doc => {
+    const log = { id: parseAssetId(doc.id), ...doc.data() };
+    const assetId = parseAssetId(log.assetId);
+    maintenanceCache[assetId] = maintenanceCache[assetId] || [];
+    maintenanceCache[assetId].push(log);
+  });
+}
+
+async function syncAssetToBackend(asset) {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  const assetCopy = { ...asset };
+  await firestore.setDoc(firestore.doc(db, 'assets', firebaseDocId(asset.id)), assetCopy);
+}
+
+async function deleteAssetFromBackend(assetId) {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  await firestore.deleteDoc(firestore.doc(db, 'assets', firebaseDocId(assetId)));
+  await deleteMaintenanceLogsForAsset(assetId);
+}
+
+async function deleteMaintenanceLogsForAsset(assetId) {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  const logsQuery = firestore.query(
+    firestore.collection(db, 'maintenanceLogs'),
+    firestore.where('assetId', '==', firebaseDocId(assetId))
+  );
+  const snapshot = await firestore.getDocs(logsQuery);
+  await Promise.all(snapshot.docs.map(logDoc => firestore.deleteDoc(logDoc.ref)));
+}
+
+async function syncMaintenanceToBackend(assetId, log) {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  const payload = { ...log, assetId: firebaseDocId(assetId) };
+  await firestore.setDoc(firestore.doc(db, 'maintenanceLogs', firebaseDocId(log.id)), payload);
+}
+
+async function deleteMaintenanceFromBackend(logId) {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+  await firestore.deleteDoc(firestore.doc(db, 'maintenanceLogs', firebaseDocId(logId)));
+}
+
 /* ── STATE ─────────────────────────────────────────────────── */
 let assets      = JSON.parse(localStorage.getItem('qed_assets') || '[]');
 let role        = localStorage.getItem('qed_role') || 'guest';
@@ -39,27 +128,38 @@ function esc(s) {
 
 /* ── MAINTENANCE LOGS ──────────────────────────────────────── */
 function getMaintenanceLogs(assetId) {
-  const key = `qed_maint_${assetId}`;
+  const aid = parseAssetId(assetId);
+  if (isFirebaseEnabled()) {
+    return maintenanceCache[aid] ? [...maintenanceCache[aid]] : [];
+  }
+  const key = `qed_maint_${aid}`;
   return JSON.parse(localStorage.getItem(key) || '[]');
 }
 function saveMaintenanceLogs(assetId, logs) {
-  localStorage.setItem(`qed_maint_${assetId}`, JSON.stringify(logs));
+  const aid = parseAssetId(assetId);
+  maintenanceCache[aid] = Array.isArray(logs) ? [...logs] : [];
+  localStorage.setItem(`qed_maint_${aid}`, JSON.stringify(maintenanceCache[aid]));
 }
 function addMaintenanceLog(assetId, logData) {
   const logs = getMaintenanceLogs(assetId);
-  logs.push({ ...logData, id: Date.now() });
+  const newLog = { ...logData, id: Date.now() };
+  logs.push(newLog);
   logs.sort((a, b) => new Date(a.date) - new Date(b.date));
   saveMaintenanceLogs(assetId, logs);
+  syncMaintenanceToBackend(assetId, newLog).catch(err => console.error('Maintenance save failed', err));
 }
 function deleteMaintenanceLog(assetId, logId) {
   const logs = getMaintenanceLogs(assetId).filter(l => l.id !== logId);
   saveMaintenanceLogs(assetId, logs);
+  deleteMaintenanceFromBackend(logId).catch(err => console.error('Delete maintenance failed', err));
 }
 function updateMaintenanceLog(assetId, logId, logData) {
   let logs = getMaintenanceLogs(assetId);
-  logs = logs.map(l => l.id === logId ? { ...logData, id: logId } : l);
+  const updatedLog = { ...logData, id: logId };
+  logs = logs.map(l => l.id === logId ? updatedLog : l);
   logs.sort((a, b) => new Date(a.date) - new Date(b.date));
   saveMaintenanceLogs(assetId, logs);
+  syncMaintenanceToBackend(assetId, updatedLog).catch(err => console.error('Maintenance update failed', err));
 }
 
 /* ── AUTH ──────────────────────────────────────────────────── */
@@ -67,6 +167,25 @@ function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
+  if (isFirebaseEnabled()) {
+    window.FIREBASE.authMethods.signInWithEmailAndPassword(window.FIREBASE.auth, email, pass)
+      .then(() => {
+        saveRole('admin');
+        err.classList.remove('show');
+        window.location.href = 'admin-access.html';
+      })
+      .catch(() => {
+        if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+          saveRole('admin');
+          err.classList.remove('show');
+          window.location.href = 'admin-access.html';
+        } else {
+          err.classList.add('show');
+        }
+      });
+    return;
+  }
+
   if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
     saveRole('admin');
     err.classList.remove('show');
@@ -76,7 +195,13 @@ function doLogin() {
   }
 }
 function doGuest() { saveRole('guest'); window.location.href = 'guest.html'; }
-function doLogout() { saveRole('guest'); window.location.href = 'index.html'; }
+function doLogout() {
+  if (isFirebaseEnabled()) {
+    window.FIREBASE.authMethods.signOut(window.FIREBASE.auth).catch(() => {});
+  }
+  saveRole('guest');
+  window.location.href = 'index.html';
+}
 
 /* ── CODE GENERATION ───────────────────────────────────────── */
 function locCode(l) {
@@ -468,12 +593,15 @@ function submitAsset() {
   if (!data.name) { flash('f-name'); return; }
   data.category = data.category || 'Uncategorised';
   if (editId) {
+    const updatedAsset = assets.find(a => a.id === editId);
     assets = assets.map(a => a.id === editId ? { ...data, id: editId, status: a.status || 'Available', code: a.code, qrCode: a.qrCode } : a);
+    syncAssetToBackend({ ...updatedAsset, ...data, id: editId }).catch(err => console.error('Asset update failed', err));
     editId = null;
   } else {
     data.code = generateCode(data.category, data.location);
     const newAsset = { ...data, id: Date.now(), status: 'Available' };
     assets.push(newAsset);
+    syncAssetToBackend(newAsset).catch(err => console.error('Asset save failed', err));
     // Generate QR code asynchronously
     attachQRToAsset(newAsset).then(() => {
       save(); render(); updateCatFilter();
@@ -487,12 +615,15 @@ function submitAssetT() {
   if (!data.name) { flash('ft-name'); return; }
   data.category = data.category || 'Uncategorised';
   if (editId) {
+    const updatedAsset = assets.find(a => a.id === editId);
     assets = assets.map(a => a.id === editId ? { ...data, id: editId, status: a.status || 'Available', code: a.code, qrCode: a.qrCode } : a);
+    syncAssetToBackend({ ...updatedAsset, ...data, id: editId }).catch(err => console.error('Asset update failed', err));
     editId = null;
   } else {
     data.code = generateCode(data.category, data.location);
     const newAsset = { ...data, id: Date.now(), status: 'Available' };
     assets.push(newAsset);
+    syncAssetToBackend(newAsset).catch(err => console.error('Asset save failed', err));
     // Generate QR code asynchronously
     attachQRToAsset(newAsset).then(() => {
       save(); render(); renderTable(); updateCatFilter();
@@ -534,6 +665,7 @@ function deleteAsset(id) {
   if (role !== 'admin') return;
   if (!confirm('Delete this asset?')) return;
   assets = assets.filter(a => a.id !== id);
+  deleteAssetFromBackend(id).catch(err => console.error('Delete asset failed', err));
   save(); render(); renderTable(); updateCatFilter();
 }
 
@@ -613,6 +745,7 @@ function attachQRToAsset(asset) {
     generateQRDataURL(asset.id, (qrData) => {
       if (qrData) {
         asset.qrCode = qrData;
+        syncAssetToBackend(asset).catch(err => console.error('QR sync failed', err));
       }
       resolve();
     });
