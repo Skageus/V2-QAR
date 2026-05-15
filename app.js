@@ -2,10 +2,8 @@
    QED Asset Registry — Shared JavaScript
    ══════════════════════════════════════════════════ */
 
-/* ── CREDENTIALS (frontend demo only) ─────────────────────── */
-const ADMIN_EMAIL = 'operations@qedi-ng.com';
-const ADMIN_PASS  = 'Qedi@1234';
 
+   
 const maintenanceCache = {};
 
 function isFirebaseEnabled() {
