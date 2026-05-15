@@ -118,13 +118,25 @@ img {
 .login-field input:focus { border-color: var(--sky); background: rgba(255,255,255,0.12); }
 .login-error { color: #fca5a5; font-size: 0.8rem; margin-bottom: 12px; display: none; }
 .login-error.show { display: block; }
-.btn-login {
-  width: 100%; background: var(--sky); color: var(--navy); border: none;
-  border-radius: 10px; padding: 13px; font-family: var(--font-head);
+.btn-login, .btn-signup, .btn-google {
+  width: 100%; border-radius: 10px; padding: 13px; font-family: var(--font-head);
   font-size: 0.88rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-  cursor: pointer; margin-bottom: 12px; transition: background 0.15s, transform 0.15s;
+  cursor: pointer; margin-bottom: 12px; transition: background 0.15s, transform 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-login {
+  background: var(--sky); color: var(--navy); border: none;
 }
 .btn-login:hover { background: #7dd3fc; transform: translateY(-1px); }
+.btn-signup {
+  background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.22);
+}
+.btn-signup:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.35); transform: translateY(-1px); }
+.btn-google {
+  background: #fff; color: #111827; border: 1px solid rgba(0,0,0,0.08); display: inline-flex;
+  align-items: center; justify-content: center; gap: 0.75rem;
+}
+.btn-google i { font-size: 1rem; }
+.btn-google:hover { background: #f8fafc; transform: translateY(-1px); }
 .login-forgot { text-align: center; }
 .login-forgot a { color: rgba(255,255,255,0.45); font-size: 0.8rem; text-decoration: none; transition: color 0.15s; }
 .login-forgot a:hover { color: var(--sky); }

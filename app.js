@@ -2,8 +2,9 @@
    QED Asset Registry — Shared JavaScript
    ══════════════════════════════════════════════════ */
 
+const ADMIN_EMAIL = 'operations@qedi-ng.com';
+const ADMIN_PASS  = 'Qedi@1234';
 
-   
 const maintenanceCache = {};
 
 function isFirebaseEnabled() {
@@ -161,11 +162,21 @@ function updateMaintenanceLog(assetId, logId, logData) {
 }
 
 /* ── AUTH ──────────────────────────────────────────────────── */
-function doLogin() {
+async function ensureFirebasePersistence() {
+  if (!isFirebaseEnabled()) return;
+  try {
+    await window.FIREBASE.authMethods.setPersistence(window.FIREBASE.auth, window.FIREBASE.authMethods.browserLocalPersistence);
+  } catch (err) {
+    console.warn('Could not set Firebase auth persistence:', err);
+  }
+}
+
+async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
   if (isFirebaseEnabled()) {
+    await ensureFirebasePersistence();
     window.FIREBASE.authMethods.signInWithEmailAndPassword(window.FIREBASE.auth, email, pass)
       .then(() => {
         saveRole('admin');
@@ -192,6 +203,57 @@ function doLogin() {
     err.classList.add('show');
   }
 }
+
+async function doSignup() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginError');
+  if (!email || !pass) {
+    err.textContent = 'Enter an email and password to sign up.';
+    err.classList.add('show');
+    return;
+  }
+  if (!isFirebaseEnabled()) {
+    err.textContent = 'Firebase signup is not available.';
+    err.classList.add('show');
+    return;
+  }
+
+  await ensureFirebasePersistence();
+  window.FIREBASE.authMethods.createUserWithEmailAndPassword(window.FIREBASE.auth, email, pass)
+    .then(() => {
+      saveRole('admin');
+      err.classList.remove('show');
+      window.location.href = 'admin-access.html';
+    })
+    .catch((error) => {
+      err.textContent = error.message || 'Sign up failed.';
+      err.classList.add('show');
+    });
+}
+
+async function doGoogleLogin() {
+  const err   = document.getElementById('loginError');
+  if (!isFirebaseEnabled()) {
+    err.textContent = 'Firebase Google sign in is not available.';
+    err.classList.add('show');
+    return;
+  }
+
+  await ensureFirebasePersistence();
+  const provider = new window.FIREBASE.authProviders.GoogleAuthProvider();
+  window.FIREBASE.authMethods.signInWithPopup(window.FIREBASE.auth, provider)
+    .then(() => {
+      saveRole('admin');
+      err.classList.remove('show');
+      window.location.href = 'admin-access.html';
+    })
+    .catch((error) => {
+      err.textContent = error.message || 'Google sign-in failed.';
+      err.classList.add('show');
+    });
+}
+
 function doGuest() { saveRole('guest'); window.location.href = 'guest.html'; }
 function doLogout() {
   if (isFirebaseEnabled()) {
@@ -920,7 +982,23 @@ function renderTable() {
 }
 
 /* ── INITIALIZATION ────────────────────────────────────────── */
+function startAuthStateListener() {
+  if (!isFirebaseEnabled()) return;
+  window.FIREBASE.authMethods.onAuthStateChanged(window.FIREBASE.auth, user => {
+    if (user) {
+      saveRole('admin');
+      if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname.endsWith('guest.html')) {
+        window.location.href = 'admin-access.html';
+      }
+    } else if (window.location.pathname.endsWith('admin-access.html')) {
+      localStorage.removeItem('qed_role');
+      window.location.href = 'index.html';
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  startAuthStateListener();
   applyRole();
   handleQRDeepLink();
   // Initialize QR codes for existing assets (async, non-blocking)
