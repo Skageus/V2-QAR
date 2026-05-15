@@ -1048,6 +1048,8 @@ function startAuthStateListener() {
 
 document.addEventListener('DOMContentLoaded', function() {
   startAuthStateListener();
+  initializeBackend();
+  render();
   applyRole();
   handleQRDeepLink();
   // Initialize QR codes for existing assets (async, non-blocking)
