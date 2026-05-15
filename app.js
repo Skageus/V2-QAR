@@ -204,34 +204,6 @@ async function doLogin() {
   }
 }
 
-async function doSignup() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const err   = document.getElementById('loginError');
-  if (!email || !pass) {
-    err.textContent = 'Enter an email and password to sign up.';
-    err.classList.add('show');
-    return;
-  }
-  if (!isFirebaseEnabled()) {
-    err.textContent = 'Firebase signup is not available.';
-    err.classList.add('show');
-    return;
-  }
-
-  await ensureFirebasePersistence();
-  window.FIREBASE.authMethods.createUserWithEmailAndPassword(window.FIREBASE.auth, email, pass)
-    .then(() => {
-      saveRole('admin');
-      err.classList.remove('show');
-      window.location.href = 'admin-access.html';
-    })
-    .catch((error) => {
-      err.textContent = error.message || 'Sign up failed.';
-      err.classList.add('show');
-    });
-}
-
 async function doGoogleLogin() {
   const err   = document.getElementById('loginError');
   if (!isFirebaseEnabled()) {

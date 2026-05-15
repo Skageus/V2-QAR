@@ -13,7 +13,7 @@ import {
   updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDyBOgfYFGxaVHe5D5j8njbyD7UFlHKoqA",
@@ -48,7 +48,6 @@ window.FIREBASE = {
   authMethods: {
     signInWithEmailAndPassword,
     signOut,
-    createUserWithEmailAndPassword,
     signInWithPopup,
     onAuthStateChanged,
     setPersistence,
