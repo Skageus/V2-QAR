@@ -23,11 +23,61 @@ function firebaseDocId(value) {
 async function initializeBackend() {
   if (!isFirebaseEnabled()) return;
   try {
-    await loadAssetsFromBackend();
-    await loadMaintenanceCacheFromBackend();
+    await startRealTimeListeners();
   } catch (err) {
     console.error('Firebase backend initialization failed:', err);
   }
+}
+
+/**
+ * Start real-time listeners for assets and maintenance logs
+ * This ensures all connected clients see updates instantly
+ */
+async function startRealTimeListeners() {
+  if (!isFirebaseEnabled()) return;
+  const { db, firestore } = window.FIREBASE;
+
+  // Real-time listener for assets collection
+  firestore.onSnapshot(firestore.collection(db, 'assets'), snapshot => {
+    assets = snapshot.docs.map(doc => ({ id: parseAssetId(doc.id), ...doc.data() }));
+    localStorage.setItem('qed_assets', JSON.stringify(assets));
+    // Refresh UI to show updated assets
+    if (window.location.pathname.includes('admin') || window.location.pathname.includes('guest')) {
+      refreshCurrentView();
+    }
+  }, err => {
+    console.error('Error listening to assets:', err);
+  });
+
+  // Real-time listener for maintenance logs collection
+  firestore.onSnapshot(firestore.collection(db, 'maintenanceLogs'), snapshot => {
+    Object.keys(maintenanceCache).forEach(key => delete maintenanceCache[key]);
+    snapshot.docs.forEach(doc => {
+      const log = { id: parseAssetId(doc.id), ...doc.data() };
+      const assetId = parseAssetId(log.assetId);
+      maintenanceCache[assetId] = maintenanceCache[assetId] || [];
+      maintenanceCache[assetId].push(log);
+    });
+    // Refresh UI to show updated maintenance logs
+    if (document.getElementById('maintView')?.style.display !== 'none') {
+      renderMaintLogs();
+    }
+  }, err => {
+    console.error('Error listening to maintenance logs:', err);
+  });
+}
+
+/**
+ * Refresh the current view to display updated data
+ * Handles both cards and table views
+ */
+function refreshCurrentView() {
+  if (currentView === 'cards') {
+    render();
+  } else if (currentView === 'table') {
+    renderTable();
+  }
+  updateCatFilter();
 }
 
 async function loadAssetsFromBackend() {

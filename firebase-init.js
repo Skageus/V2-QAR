@@ -11,7 +11,8 @@ import {
   orderBy,
   addDoc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
@@ -43,7 +44,8 @@ window.FIREBASE = {
     orderBy,
     addDoc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    onSnapshot
   },
   authMethods: {
     signInWithEmailAndPassword,
