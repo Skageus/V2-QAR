@@ -305,11 +305,48 @@ async function doGoogleLogin() {
 
 function doGuest() { saveRole('guest'); window.location.href = 'guest.html'; }
 function doLogout() {
+  // stop inactivity tracking when logging out
+  try { stopInactivityTracking(); } catch (e) {}
   if (isFirebaseEnabled()) {
     window.FIREBASE.authMethods.signOut(window.FIREBASE.auth).catch(() => {});
   }
   saveRole('guest');
   window.location.href = 'index.html';
+}
+
+// Inactivity tracking: log out admin after 30 minutes of inactivity
+let inactivityTimerId = null;
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+function stopInactivityTimer() {
+  if (inactivityTimerId) {
+    clearTimeout(inactivityTimerId);
+    inactivityTimerId = null;
+  }
+}
+
+function resetInactivityTimer() {
+  if (role !== 'admin') return;
+  stopInactivityTimer();
+  inactivityTimerId = setTimeout(() => {
+    console.log('Auto-logout: admin inactive for 30 minutes');
+    try { doLogout(); } catch (e) { console.error(e); }
+  }, INACTIVITY_TIMEOUT_MS);
+}
+
+function startInactivityTracking() {
+  stopInactivityTimer();
+  resetInactivityTimer();
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'click'].forEach(ev =>
+    document.addEventListener(ev, resetInactivityTimer, { passive: true })
+  );
+}
+
+function stopInactivityTracking() {
+  stopInactivityTimer();
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'click'].forEach(ev =>
+    document.removeEventListener(ev, resetInactivityTimer)
+  );
 }
 
 /* ── CODE GENERATION ───────────────────────────────────────── */
@@ -593,6 +630,10 @@ function applyRole() {
   if (roleBadge)   { roleBadge.textContent = isAdmin ? '🔑 Admin' : '👁 Guest'; roleBadge.className = 'role-badge ' + role; }
   if (addBtn)      { addBtn.style.display  = isAdmin ? '' : 'none'; }
   if (guestBanner) { guestBanner.style.display = isAdmin ? 'none' : ''; }
+  // Start or stop inactivity tracking for admin
+  try {
+    if (isAdmin) startInactivityTracking(); else stopInactivityTracking();
+  } catch (e) {}
 }
 
 /* ── FORM FIELDS ───────────────────────────────────────────── */
