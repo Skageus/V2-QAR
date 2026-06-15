@@ -443,7 +443,7 @@ function openDetail(id) {
   document.getElementById('detailSpecs').textContent = a.specs || 'No specifications listed.';
 
   const da = document.getElementById('detailActions');
-  da.innerHTML = `<button class="btn-maint-log" onclick="openMaintView(${a.id})"><i class="fas fa-wrench"></i> Maintenance Logs</button><button class="btn-qr" onclick="showQR(${a.id},event)"><i class="fas fa-qrcode"></i> QR Code</button>`;
+  da.innerHTML = `<button class="btn-maint-log" onclick="openMaintView(${a.id})"><i class="fas fa-wrench"></i> Maintenance Logs</button><button class="btn-depr" onclick="showDepreciation(${a.id},event)"><i class="fas fa-calculator"></i> Depreciation</button><button class="btn-qr" onclick="showQR(${a.id},event)"><i class="fas fa-qrcode"></i> QR Code</button>`;
   if (role === 'admin') {
     da.innerHTML += `<button class="btn-submit" onclick="editFromDetail(${a.id})">Edit Asset</button><button class="btn-cancel" onclick="deleteFromDetail(${a.id})">Delete</button>`;
   }
@@ -843,8 +843,8 @@ function render() {
       const img = a.image ? `<img class="asset-img" src="${esc(a.image)}" alt="${esc(a.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
       const ph  = `<div class="asset-img-placeholder" ${a.image ? 'style="display:none"' : ''}><i class="fas fa-box"></i></div>`;
       const actions = role === 'admin'
-        ? `<div class="card-actions"><button class="btn-qr" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><i class="fas fa-qrcode"></i></button><button class="btn-edit" onclick="event.stopPropagation();editAsset(${a.id})">Edit</button><button class="btn-del" onclick="event.stopPropagation();deleteAsset(${a.id})">Delete</button></div>`
-        : `<div class="card-actions"><button class="btn-qr" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><i class="fas fa-qrcode"></i> QR</button></div>`;
+        ? `<div class="card-actions"><button class="btn-qr" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><i class="fas fa-qrcode"></i></button><button class="btn-depr" onclick="event.stopPropagation();showDepreciation(${a.id},event)" title="Depreciation"><i class="fas fa-calculator"></i></button><button class="btn-edit" onclick="event.stopPropagation();editAsset(${a.id})">Edit</button><button class="btn-del" onclick="event.stopPropagation();deleteAsset(${a.id})">Delete</button></div>`
+        : `<div class="card-actions"><button class="btn-qr" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><i class="fas fa-qrcode"></i> QR</button><button class="btn-depr" onclick="event.stopPropagation();showDepreciation(${a.id},event)" title="Depreciation">Depreciation</button></div>`;
       return `<div class="asset-card" onclick="openDetail(${a.id})">${img}${ph}
         <div class="asset-body">
           <div class="asset-name" title="${esc(a.name)}">${esc(a.name)}</div>
@@ -972,6 +972,76 @@ function handleQRDeepLink() {
   if (a) openDetail(assetId);
 }
 
+/* ── DEPRECIATION (Straight-line) ─────────────────────────── */
+function calculateStraightLineDepreciation(cost, salvage, lifeYears, yearsElapsed) {
+  cost = Number(cost) || 0;
+  salvage = Number(salvage) || 0;
+  lifeYears = Number(lifeYears) || 0;
+  yearsElapsed = Number(yearsElapsed) || 0;
+  if (lifeYears <= 0) throw new Error('Useful life must be > 0');
+  const annual = (cost - salvage) / lifeYears;
+  const accumulated = Math.min(Math.max(0, annual * yearsElapsed), Math.max(0, cost - salvage));
+  const bookValue = Math.max(salvage, cost - accumulated);
+  return { annual, accumulated, bookValue };
+}
+
+function showDepreciation(assetId, event) {
+  if (event) event.stopPropagation();
+  const a = assets.find(x => x.id === assetId);
+  const old = document.getElementById('deprModalOverlay');
+  if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'qr-modal-overlay';
+  overlay.id = 'deprModalOverlay';
+  const cost = a && a.cost ? a.cost : (a && a.purchasePrice ? a.purchasePrice : '');
+  const salvage = a && a.salvage ? a.salvage : '';
+  const life = a && a.usefulLifeYears ? a.usefulLifeYears : '';
+  overlay.innerHTML = `
+    <div class="qr-modal">
+      <button class="qr-modal-close" onclick="closeDepreciation()" title="Close">&times;</button>
+      <div class="qr-modal-label"><i class="fas fa-calculator"></i> Depreciation</div>
+      <div class="qr-modal-name">${esc(a ? a.name : 'Asset')}</div>
+      <div style="margin:8px 0;color:var(--muted);font-size:0.9rem">Enter values below (local values prefilled if available)</div>
+      <div style="display:flex;gap:8px;flex-direction:column;">
+        <label>Cost / Purchase Price<br><input id="depr-cost" type="number" value="${esc(cost)}" style="width:100%"></label>
+        <label>Salvage Value<br><input id="depr-salvage" type="number" value="${esc(salvage)}" style="width:100%"></label>
+        <label>Useful Life (years)<br><input id="depr-life" type="number" value="${esc(life)}" style="width:100%"></label>
+        <label>Elapsed Years<br><input id="depr-years" type="number" value="0" style="width:100%"></label>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+        <button class="btn-qr-download" onclick="performDepCalculation()">Calculate</button>
+        <button class="btn-cancel" onclick="closeDepreciation()">Close</button>
+      </div>
+      <div id="depr-results" style="margin-top:12px;color:var(--navy);"></div>
+    </div>`;
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeDepreciation(); });
+  document.body.appendChild(overlay);
+}
+
+function closeDepreciation() {
+  const overlay = document.getElementById('deprModalOverlay');
+  if (overlay) overlay.remove();
+}
+
+function performDepCalculation() {
+  try {
+    const c = document.getElementById('depr-cost').value;
+    const s = document.getElementById('depr-salvage').value;
+    const l = document.getElementById('depr-life').value;
+    const y = document.getElementById('depr-years').value;
+    const res = calculateStraightLineDepreciation(c, s, l, y);
+    document.getElementById('depr-results').innerHTML = `
+      <div style="font-weight:600">Annual depreciation:</div>
+      <div>₦ ${Number(res.annual).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div style="margin-top:8px;font-weight:600">Accumulated depreciation:</div>
+      <div>₦ ${Number(res.accumulated).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div style="margin-top:8px;font-weight:600">Book value:</div>
+      <div>₦ ${Number(res.bookValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+  } catch (e) {
+    alert(e.message || 'Calculation error');
+  }
+}
+
 /* ── TABLE RENDER ──────────────────────────────────────────── */
 function updateCatFilter() {
   const sel = document.getElementById('catFilter');
@@ -1050,8 +1120,8 @@ function renderTable() {
         ? `<div class="qr-thumbnail" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><img src="${a.qrCode}" alt="QR" style="width:40px;height:40px;border-radius:4px;cursor:pointer;border:1px solid var(--border)"/></div>`
         : `<div class="qr-placeholder" onclick="event.stopPropagation();showQR(${a.id},event)" title="Show QR Code"><i class="fas fa-qrcode" style="color:var(--muted);cursor:pointer"></i></div>`;
       const acts = role === 'admin'
-        ? `<div class="td-actions" onclick="event.stopPropagation()"><button class="btn-qr" onclick="showQR(${a.id},event)" title="QR Code"><i class="fas fa-qrcode"></i></button><button class="btn-edit" onclick="editAsset(${a.id})">Edit</button><button class="btn-del" onclick="deleteAsset(${a.id})">Delete</button></div>`
-        : `<div class="td-actions" onclick="event.stopPropagation()"><button class="btn-qr" onclick="showQR(${a.id},event)" title="QR Code"><i class="fas fa-qrcode"></i></button></div>`;
+        ? `<div class="td-actions" onclick="event.stopPropagation()"><button class="btn-qr" onclick="showQR(${a.id},event)" title="QR Code"><i class="fas fa-qrcode"></i></button><button class="btn-depr" onclick="showDepreciation(${a.id},event)" title="Depreciation"><i class="fas fa-calculator"></i></button><button class="btn-edit" onclick="editAsset(${a.id})">Edit</button><button class="btn-del" onclick="deleteAsset(${a.id})">Delete</button></div>`
+        : `<div class="td-actions" onclick="event.stopPropagation()"><button class="btn-qr" onclick="showQR(${a.id},event)" title="QR Code"><i class="fas fa-qrcode"></i></button><button class="btn-depr" onclick="showDepreciation(${a.id},event)" title="Depreciation">Depreciation</button></div>`;
       rows.push(`<tr onclick="openDetail(${a.id})">
         <td class="td-code">${esc(a.code || '—')}</td>
         <td class="td-name">${esc(a.name)}</td>
