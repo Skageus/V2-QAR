@@ -443,6 +443,7 @@ function openDetail(id) {
   document.getElementById('detailSpecs').textContent = a.specs || 'No specifications listed.';
 
   const da = document.getElementById('detailActions');
+  da.innerHTML = `<button class="btn-maint-log" onclick="openMaintView(${a.id})"><i class="fas fa-wrench"></i> Maintenance Logs</button><button class="btn-depr" onclick="showDepreciation(${a.id},event)"><i class="fas fa-calculator"></i> Depreciation</button><button class="btn-qr" onclick="showQR(${a.id},event)"><i class="fas fa-qrcode"></i> QR Code</button>`;
   if (role === 'admin') {
     da.innerHTML += `<button class="btn-submit" onclick="editFromDetail(${a.id})">Edit Asset</button><button class="btn-cancel" onclick="deleteFromDetail(${a.id})">Delete</button>`;
   }
